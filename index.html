@@ -1,1 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Timetables — Index</title>
 
+<!-- Re-using the visual theme from the timetable pages so the list matches their style -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
+
+  :root{
+    --page: #0b0d10;
+    --board: #15181d;
+    --board-edge: #202429;
+    --panel: #1b1f26;
+    --tile: #1f242c;
+    --tile-hi: #262c35;
+    --tile-border: rgba(255,255,255,0.07);
+    --text: #ece7da;
+    --text-dim: #868c96;
+    --text-faint: #565c66;
+    --amber: #f2a93b;
+    --amber-soft: rgba(242,169,59,0.16);
+    --green: #34d399;
+    --green-soft: rgba(52,211,153,0.16);
+    --radius: 10px;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background: radial-gradient(ellipse at 50% -10%, #1a1e24 0%, var(--page) 55%);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    display:flex;
+    justify-content:center;
+    padding: 32px 16px 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap{ width:100%; max-width: 960px; }
+
+  .board{
+    position:relative;
+    background: linear-gradient(180deg, var(--board), #101216);
+    border-radius: 18px;
+    border: 1px solid var(--board-edge);
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
+    padding: 22px 22px 26px;
+  }
+
+  .head{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    gap: 16px; margin-bottom: 18px; padding: 4px 6px 16px;
+    border-bottom: 1px solid var(--tile-border);
+  }
+  .title{
+    font-family:'JetBrains Mono', monospace; font-weight:700; font-size: 20px;
+    letter-spacing: 0.5px; color: var(--text); margin:0;
+  }
+  .subtitle{ margin: 4px 0 0; font-size: 13px; color: var(--text-dim); }
+
+  /* list area */
+  .list-wrap{
+    margin-top: 12px;
+  }
+  .timetable-list{
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+
+  /* Small tile that references a timetable page */
+  .timetable-item{
+    background: var(--tile);
+    border: 1px solid var(--tile-border);
+    border-radius: 10px;
+    padding: 12px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-height: 84px;
+    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  }
+  .timetable-item:hover{
+    transform: translateY(-4px);
+    border-color: rgba(242,169,59,0.28);
+    box-shadow: 0 12px 30px -12px rgba(0,0,0,0.6);
+  }
+  .timetable-link{
+    color:var(--text); text-decoration:none; display:block;
+    font-weight:700; font-family:'JetBrains Mono',monospace; font-size:14px;
+    letter-spacing:0.6px;
+  }
+  .timetable-meta{
+    color:var(--text-faint); font-size:13px; display:flex; align-items:center; gap:8px;
+    justify-content:space-between;
+  }
+
+  .empty{
+    text-align:center; color:var(--text-faint); padding: 28px 8px;
+  }
+
+  .search-row{
+    display:flex; gap:8px; margin-bottom:12px; align-items:center;
+  }
+  .search{
+    flex:1; background: var(--panel); border:1px solid var(--tile-border); border-radius:8px;
+    padding: 10px 12px; color: var(--text); font-size:14px;
+  }
+  .filter-count{
+    font-size:13px; color:var(--text-dim);
+    background: var(--panel); border:1px solid var(--tile-border); padding:8px 10px; border-radius:8px;
+  }
+
+  .footer-note{ margin-top:14px; color:var(--text-faint); font-size:13px; text-align:center; }
+
+  @media (max-width:520px){
+    .timetable-list{ grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="board" id="board">
+      <div class="head">
+        <div>
+          <p class="title">TIMETABLES</p>
+          <p class="subtitle">A listing of timetable pages inside the tables/ folder</p>
+        </div>
+        <div style="text-align:right;">
+          <div class="filter-count" id="count">—</div>
+        </div>
+      </div>
+
+      <div class="list-wrap">
+        <div class="search-row">
+          <input id="search" class="search" placeholder="Filter by name (type to narrow)…" />
+          <button id="refresh" class="filter-count" title="Refresh listing">↻ Refresh</button>
+        </div>
+
+        <ul id="list" class="timetable-list" aria-live="polite">
+          <li class="empty" id="loading">Loading table index…</li>
+        </ul>
+
+        <div class="footer-note">
+          This page discovers files using the GitHub contents API. If your repository is private or you reach API rate limits the list may fail to load.
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/*
+  Index page script:
+
+  - Queries GitHub contents API for the 'tables' directory in this repo
+  - Builds a responsive grid of tiles linking to /tables/<file>.html
+  - Provides a client-side search filter
+  - If the repo is private or API calls fail, an error message is shown.
+*/
+
+(async function(){
+  const owner = 'testemailer20202-dotcom';
+  const repo  = 'testemailer20202-dotcom.github.io';
+  const dirPath = 'tables';
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${dirPath}`;
+
+  const listEl = document.getElementById('list');
+  const loadingEl = document.getElementById('loading');
+  const searchInput = document.getElementById('search');
+  const countEl = document.getElementById('count');
+  const refreshBtn = document.getElementById('refresh');
+
+  let files = [];
+
+  function niceLabel(filename){
+    return filename.replace(/\.html$/i, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c=>c.toUpperCase());
+  }
+
+  function renderList(filtered){
+    listEl.innerHTML = '';
+    if(filtered.length === 0){
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = 'No matching timetable pages found.';
+      listEl.appendChild(li);
+      countEl.textContent = '0';
+      return;
+    }
+
+    filtered.forEach(f=>{
+      const li = document.createElement('li');
+      li.className = 'timetable-item';
+
+      const a = document.createElement('a');
+      a.className = 'timetable-link';
+      a.href = `/tables/${encodeURIComponent(f.name)}`;
+      a.textContent = niceLabel(f.name);
+      a.title = f.name;
+      a.rel = 'noopener';
+
+      const meta = document.createElement('div');
+      meta.className = 'timetable-meta';
+
+      const info = document.createElement('span');
+      info.textContent = f.name;
+      info.style.fontFamily = "'JetBrains Mono', monospace";
+      info.style.fontSize = '12px';
+      info.style.color = 'var(--text-faint)';
+
+      const open = document.createElement('a');
+      open.href = `/tables/${encodeURIComponent(f.name)}`;
+      open.textContent = 'Open';
+      open.style.color = 'var(--amber)';
+      open.style.fontWeight = '700';
+      open.style.textDecoration = 'none';
+
+      meta.appendChild(info);
+      meta.appendChild(open);
+
+      li.appendChild(a);
+      li.appendChild(meta);
+
+      listEl.appendChild(li);
+    });
+
+    countEl.textContent = String(filtered.length);
+  }
+
+  function applyFilter(){
+    const q = searchInput.value.trim().toLowerCase();
+    const filtered = files.filter(f => f.name.toLowerCase().includes(q) || niceLabel(f.name).toLowerCase().includes(q));
+    renderList(filtered);
+  }
+
+  async function fetchIndex(){
+    listEl.innerHTML = '<li class="empty" id="loading">Loading table index…</li>';
+    countEl.textContent = '—';
+    try {
+      const resp = await fetch(apiUrl);
+      if(!resp.ok){
+        throw new Error(`GitHub API returned ${resp.status} ${resp.statusText}`);
+      }
+      const items = await resp.json();
+      // items is an array of { name, path, type, download_url, ... }
+      files = (items || [])
+        .filter(i => i.type === 'file' && i.name.toLowerCase().endsWith('.html'))
+        .sort((a,b) => a.name.localeCompare(b.name));
+      if(files.length === 0){
+        listEl.innerHTML = '<li class="empty">No .html files found in the tables/ directory.</li>';
+        countEl.textContent = '0';
+        return;
+      }
+      applyFilter();
+    } catch (err){
+      console.error(err);
+      listEl.innerHTML = '';
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.innerHTML = `
+        Could not load the directory listing from GitHub.
+        <div style="margin-top:8px;color:var(--text-faint);font-size:13px">
+          ${err.message}. If this repository is private you must either make it public or modify this page to embed a static listing.
+        </div>
+      `;
+      listEl.appendChild(li);
+      countEl.textContent = '—';
+    }
+  }
+
+  // Wire up search + refresh
+  searchInput.addEventListener('input', applyFilter);
+  refreshBtn.addEventListener('click', fetchIndex);
+
+  // initial load
+  fetchIndex();
+})();
+</script>
+</body>
+</html>
