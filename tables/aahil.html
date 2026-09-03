@@ -314,7 +314,7 @@
     </div>
 
     <div class="ticker" id="ticker">
-      <span class="badge" id="ticker-badge">—</span>
+      <span class="badge" id="ticker-badge">-</span>
       <span class="msg" id="ticker-msg">Loading schedule…</span>
       <button class="jump-today" id="jump-today" style="display:none;">Jump to today <kbd>T</kbd></button>
     </div>
@@ -530,7 +530,7 @@
     if(!DAYS.includes(todayName) && !isToday){
       badge.textContent = 'WEEKEND';
       ticker.classList.remove('now');
-      msg.innerHTML = 'It\'s the weekend — showing <b>'+state.selectedDay+'</b>\'s schedule. Back in session '+nextSchoolDay(new Date().getDay())+' at 07:45.';
+      msg.innerHTML = 'It\'s the weekend - showing <b>'+state.selectedDay+'</b>\'s schedule. Back in session '+nextSchoolDay(new Date().getDay())+' at 07:45.';
       return;
     }
 
@@ -545,22 +545,22 @@
     if(status.type === 'inclass'){
       badge.textContent = 'NOW';
       ticker.classList.add('now');
-      msg.innerHTML = '<b>'+status.period.subject+'</b> is on — ends in '+fmtMinutes(status.remaining)+'.';
+      msg.innerHTML = '<b>'+status.period.subject+'</b> is on - ends in '+fmtMinutes(status.remaining)+'.';
     } else if(status.type === 'break'){
       badge.textContent = 'BREAK';
       ticker.classList.remove('now');
-      msg.innerHTML = 'On break — <b>'+status.next.subject+'</b> starts in '+fmtMinutes(status.minsUntil)+'.';
+      msg.innerHTML = 'On break - <b>'+status.next.subject+'</b> starts in '+fmtMinutes(status.minsUntil)+'.';
     } else if(status.type === 'beforeschool'){
       badge.textContent = 'SOON';
       ticker.classList.remove('now');
-      msg.innerHTML = 'School starts in '+fmtMinutes(status.minsUntil)+' — first up: <b>'+status.next.subject+'</b>.';
+      msg.innerHTML = 'School starts in '+fmtMinutes(status.minsUntil)+' - first up: <b>'+status.next.subject+'</b>.';
     } else if(status.type === 'afterschool'){
       badge.textContent = 'DONE';
       ticker.classList.remove('now');
       const nd = nextSchoolDay(new Date().getDay());
       msg.innerHTML = 'That\'s the school day done. Back '+(nd===state.selectedDay?'tomorrow':nd)+' at 07:45.';
     } else {
-      badge.textContent = '—';
+      badge.textContent = '-';
       ticker.classList.remove('now');
       msg.textContent = 'No schedule data for this moment.';
     }
@@ -696,7 +696,7 @@
           }
         }else{
           cell.className = 'wg-cell wg-dash';
-          cell.textContent = '—';
+          cell.textContent = '-';
         }
         row.appendChild(cell);
       });
